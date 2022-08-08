@@ -67,9 +67,6 @@ contract Staker {
       require(sent, "exampleExternalContract.complete failed");
 
       exampleExternalContract.complete{value: address(this).balance}();
-      
-      //call completed
-      // exampleExternalContract.complete();
             
     } else { //if (address(this).balance >= threshold) {
       openForWithdraw = true;
