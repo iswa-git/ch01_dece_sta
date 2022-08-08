@@ -18,7 +18,7 @@ contract Staker {
   uint256 public constant threshold = 1 ether;
 
   //deadline
-  uint256 public deadline = block.timestamp + 30 seconds;
+  uint256 public deadline = block.timestamp + 72 hours;
 
   //open for withdraw
   bool public openForWithdraw = false;
