@@ -20,8 +20,10 @@ contract Staker {
   //deadline
   uint256 public deadline = block.timestamp + 30 seconds;
 
+  //open for withdraw
   bool public openForWithdraw = false;
 
+  // has deadline passed with an argument passed (change the requirement based on whether the deadline has passed or not)
   modifier deadlinePassed( bool reached ) {
       uint256 timeRemaining = timeLeft();
       if( reached ) {
@@ -49,7 +51,7 @@ contract Staker {
 
   // Collect funds in a payable `stake()` function and track individual `balances` with a mapping:
   // ( Make sure to add a `Stake(address,uint256)` event and emit it for the frontend <List/> display )
-  function stake() public payable {
+  function stake() public notCompleted payable {
     // update the user's balance
     balances[msg.sender] += msg.value;
     
@@ -65,8 +67,9 @@ contract Staker {
       require(sent, "exampleExternalContract.complete failed");
 
       exampleExternalContract.complete{value: address(this).balance}();
+      
       //call completed
-      exampleExternalContract.complete();
+      // exampleExternalContract.complete();
             
     } else { //if (address(this).balance >= threshold) {
       openForWithdraw = true;
