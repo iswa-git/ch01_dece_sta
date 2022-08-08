@@ -22,48 +22,56 @@ contract Staker {
 
   bool public openForWithdraw = false;
 
-modifier deadlinePassed( bool reached ) {
-    uint256 timeRemaining = timeLeft();
-    if( reached ) {
-      require(timeRemaining == 0, "Deadline is not reached yet");
-    } else {
-      require(timeRemaining > 0, "Deadline is already reached");
-    }
-    _;
+  modifier deadlinePassed( bool reached ) {
+      uint256 timeRemaining = timeLeft();
+      if( reached ) {
+        require(timeRemaining == 0, "Deadline is not reached yet");
+      } else {
+        require(timeRemaining > 0, "Deadline is already reached");
+      }
+      _;
   }
 
+  modifier thresholdMet () {
+    require(address(this).balance >= threshold, "Threshold not met");
+    _;
+  }
+  
   modifier notCompleted() {
     bool completed = exampleExternalContract.completed();
     require (!completed, "Already completed");
     _;
   }
+  
   constructor(address exampleExternalContractAddress) {
       exampleExternalContract = ExampleExternalContract(exampleExternalContractAddress);
   }
 
-// Collect funds in a payable `stake()` function and track individual `balances` with a mapping:
-// ( Make sure to add a `Stake(address,uint256)` event and emit it for the frontend <List/> display )
-function stake() public payable {
-  // update the user's balance
-  balances[msg.sender] += msg.value;
-   
-  // emit the event to notify the blockchain that we have correctly Staked some fund for the user
-  emit Stake(msg.sender, msg.value);
-}
-
-// After some `deadline` allow anyone to call an `execute()` function
-// If the deadline has passed and the threshold is met, it should call `exampleExternalContract.complete{value: address(this).balance}()`
-function execute() public notCompleted(){
-  if (address(this).balance > threshold){  
-    (bool sent,) = address(exampleExternalContract).call{value: address(this).balance}(abi.encodeWithSignature("complete()"));
-    require(sent, "exampleExternalContract.complete failed");
-
-    //call completed
-    exampleExternalContract.complete{value: address(this).balance}();
-  } else {
-    openForWithdraw = true;
+  // Collect funds in a payable `stake()` function and track individual `balances` with a mapping:
+  // ( Make sure to add a `Stake(address,uint256)` event and emit it for the frontend <List/> display )
+  function stake() public payable {
+    // update the user's balance
+    balances[msg.sender] += msg.value;
+    
+    // emit the event to notify the blockchain that we have correctly Staked some fund for the user
+    emit Stake(msg.sender, msg.value);
   }
-}
+
+  // After some `deadline` allow anyone to call an `execute()` function
+  // If the deadline has passed and the threshold is met, it should call `exampleExternalContract.complete{value: address(this).balance}()`
+  function execute() public deadlinePassed(true) notCompleted() {
+    if (address(this).balance >= threshold){  
+      (bool sent,) = address(exampleExternalContract).call{value: address(this).balance}(abi.encodeWithSignature("complete()"));
+      require(sent, "exampleExternalContract.complete failed");
+
+      exampleExternalContract.complete{value: address(this).balance}();
+      //call completed
+      exampleExternalContract.complete();
+            
+    } else { //if (address(this).balance >= threshold) {
+      openForWithdraw = true;
+    }
+  }
 
   // If the `threshold` was not met, allow everyone to call a `withdraw()` function
   // Add a `withdraw()` function to let users withdraw their balance
@@ -94,5 +102,4 @@ function execute() public notCompleted(){
   receive () external payable{
     stake();
   }
-
 }
